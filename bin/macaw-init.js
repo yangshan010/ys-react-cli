@@ -5,20 +5,21 @@
 
 const program = require("commander");
 const path = require("path");
-
-console.log(
-  "path.parse(context.target).dir",
-  path.parse("hello-cli/.download-temp").dir
-);
+const chalk = require("chalk");
+const logSymbols = require("log-symbols");
+// console.log(
+//   "path.parse(context.target).dir",
+//   path.parse("hello-cli/.download-temp").dir
+// );
 const fs = require("fs");
 const glob = require("glob");
 const download = require("../lib/download");
 const inquirer = require("inquirer");
 const latestVersion = require("latest-version");
 const generator = require("../lib/generator.js");
-program.usage("<project-name>").parse(process.argv);
+// program.usage("<project-name>").parse(process.argv);
 
-let projectName = program.args[0];
+let projectName = process.argv[2];
 
 if (!projectName) {
   // project-name 必填
@@ -78,7 +79,7 @@ next = inquirer
         console.log(`项目${projectName}已经存在`);
         return;
       }
-      console.log("answer", answer.buildInCurrent);
+      // console.log("answer", answer.buildInCurrent);
     }
     return Promise.resolve(answer.buildInCurrent);
   });
@@ -96,7 +97,7 @@ function go() {
 
       return download(projectRoot)
         .then(target => {
-          console.log("成功", target);
+          // console.log("成功", target);
           return {
             name: projectRoot,
             root: projectRoot,
@@ -142,11 +143,11 @@ function go() {
         });
     })
     .then(context => {
-      console.log(context);
-      console.log(
-        "path.parse(context.target).dir",
-        path.parse(context.target).dir
-      );
+      // console.log(context);
+      // console.log(
+      //   "path.parse(context.target).dir",
+      //   path.parse(context.target).dir
+      // );
       return generator(
         context.metadata,
         context.target,
@@ -154,7 +155,11 @@ function go() {
       );
     })
     .then(contenxt => {
-      console.log("创建成功");
+      console.log(logSymbols.success, chalk.green("创建成功:)"));
+      console.log();
+      console.log(
+        chalk.green("cd " + projectName + "\nnpm install\nnpm run start")
+      );
     })
     .catch(err => {
       console.log("失败了", err);
