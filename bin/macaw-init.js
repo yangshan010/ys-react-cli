@@ -3,7 +3,6 @@
 // 当前目录为空，如果当前目录的名称和project-name一样，则直接在当前目录下创建工程，否则，在当前目录下创建以project-name作为名称的目录作为工程的根目录
 // 当前目录不为空，如果目录中不存在与project-name同名的目录，则创建以project-name作为名称的目录作为工程的根目录，否则提示项目已经存在，结束命令执行。
 
-const program = require("commander");
 const path = require("path");
 const chalk = require("chalk");
 const logSymbols = require("log-symbols");
@@ -11,8 +10,9 @@ const fs = require("fs");
 const glob = require("glob");
 const download = require("../lib/download");
 const inquirer = require("inquirer");
-const latestVersion = require("latest-version");
 const generator = require("../lib/generator.js");
+const copyFiles = require("../lib/copyFiles.js");
+const rm = require("rimraf").sync;
 let projectRoot = "";
 console.log(path.parse("ys/dev").dir);
 // 获取当前文件夹 有哪些文件
@@ -43,24 +43,12 @@ function go() {
   next
     .then(projectRoot => {
       fs.mkdirSync(projectRoot);
-      console.log("projectRoot", projectRoot);
-      return download(projectRoot)
-        .then(target => {
-          console.log("成功", target);
-          return {
-            name: projectRoot,
-            root: projectRoot,
-            target
-          };
-        })
-        .catch(err => {
-          console.log(err);
-        });
-      // return Promise.resolve({
-      //   name: projectRoot,
-      //   root: projectRoot,
-      //   target: "ys/ys"
-      // });
+      return copyFiles(projectRoot).then(target => {
+        return {
+          target,
+          name: projectRoot
+        };
+      });
     })
     .then(context => {
       return inquirer
@@ -111,7 +99,8 @@ function go() {
       );
     })
     .catch(err => {
-      console.log(logSymbols.error, chalk.green("创建失败:)"));
+      rm(projectRoot);
+      console.log(logSymbols.error, chalk.green("创建失败:)"), err);
     });
 }
 
