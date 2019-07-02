@@ -7,64 +7,18 @@ const program = require("commander");
 const path = require("path");
 const chalk = require("chalk");
 const logSymbols = require("log-symbols");
-// console.log(
-//   "path.parse(context.target).dir",
-//   path.parse("hello-cli/.download-temp").dir
-// );
 const fs = require("fs");
 const glob = require("glob");
 const download = require("../lib/download");
 const inquirer = require("inquirer");
 const latestVersion = require("latest-version");
 const generator = require("../lib/generator.js");
-// program.usage("<project-name>").parse(process.argv);
-
-let projectName = process.argv[2];
-
-if (!projectName) {
-  // project-name 必填
-  // 相当于执行命令的--help选项，显示help信息，这是commander内置的一个命令选项
-  // program.help();
-  projectName = "dev-project";
-}
-
+let projectRoot = "";
+console.log(path.parse("ys/dev").dir);
 // 获取当前文件夹 有哪些文件
 const list = glob.sync("*");
 let next = undefined;
-// console.log("process.cwd()", process.cwd());
-// console.log("__dirname", __dirname);
-// console.log("path.basename(process.cwd())", path.basename(process.cwd()));
-// console.log("list");
-
-let rootName = path.basename(process.cwd());
-
-// console.log("rootName", rootName);
-// console.log("projectName", projectName);
-// if (list.length) {
-//   // 如果当前目录不为空
-//   if (list.indexOf(projectName) >= 0) {
-//     console.log(`项目${projectName}已经存在`);
-//     return;
-//   }
-//   next = Promise.resolve(projectName);
-// } else if (rootName === projectName) {
-//   next = inquirer
-//     .prompt([
-//       {
-//         name: "buildInCurrent",
-//         message:
-//           "当前目录为空，且目录名称和项目名称相同，是否直接在当前目录下创建新项目？",
-//         type: "confirm",
-//         default: true
-//       }
-//     ])
-//     .then(answer => {
-//       console.log("answer.buildInCurrent ", answer.buildInCurrent);
-//       return Promise.resolve(answer.buildInCurrent ? "." : projectName);
-//     });
-// } else {
-//   next = Promise.resolve(projectName);
-// }
+// let rootName = path.basename(process.cwd());
 next = inquirer
   .prompt([
     {
@@ -76,28 +30,23 @@ next = inquirer
   .then(answer => {
     if (list.length) {
       if (list.indexOf(answer.buildInCurrent) >= 0) {
-        console.log(`项目${projectName}已经存在`);
-        return;
+        console.log(chalk.red(`项目${answer.buildInCurrent}已经存在`));
+        return Promise.reject();
       }
       // console.log("answer", answer.buildInCurrent);
     }
+    projectRoot = answer.buildInCurrent;
     return Promise.resolve(answer.buildInCurrent);
   });
 next && go;
 function go() {
-  // console.log(path.resolve(process.cwd(), path.join(".", rootName)));
-  //
   next
     .then(projectRoot => {
-      // console.log("next===>回调", projectRoot);
-      if (projectRoot !== ".") {
-        // console.log("是否相等");
-        fs.mkdirSync(projectRoot);
-      }
-
+      fs.mkdirSync(projectRoot);
+      console.log("projectRoot", projectRoot);
       return download(projectRoot)
         .then(target => {
-          // console.log("成功", target);
+          console.log("成功", target);
           return {
             name: projectRoot,
             root: projectRoot,
@@ -107,10 +56,20 @@ function go() {
         .catch(err => {
           console.log(err);
         });
+      // return Promise.resolve({
+      //   name: projectRoot,
+      //   root: projectRoot,
+      //   target: "ys/ys"
+      // });
     })
     .then(context => {
       return inquirer
         .prompt([
+          {
+            name: "port",
+            message: "端口号",
+            default: "8080"
+          },
           {
             name: "projectName",
             message: "项目的名称",
@@ -128,41 +87,31 @@ function go() {
           }
         ])
         .then(answers => {
-          return latestVersion("macaw-ui").then(version => {
-            answers.supportUiVersion = version;
-            return {
-              ...context,
-              metadata: {
-                ...answers
-              }
-            };
-          });
-          // .catch(err => {
-          //   return Promise.reject(err);
-          // });
+          return {
+            ...context,
+            metadata: {
+              ...answers
+            }
+          };
         });
     })
     .then(context => {
-      // console.log(context);
-      // console.log(
-      //   "path.parse(context.target).dir",
-      //   path.parse(context.target).dir
-      // );
+      // console.log("path.parse(context.target).dir", context.target);
       return generator(
         context.metadata,
         context.target,
         path.parse(context.target).dir
       );
     })
-    .then(contenxt => {
+    .then(context => {
       console.log(logSymbols.success, chalk.green("创建成功:)"));
       console.log();
       console.log(
-        chalk.green("cd " + projectName + "\nnpm install\nnpm run start")
+        chalk.green("cd " + projectRoot + "\nnpm install\nnpm run start")
       );
     })
     .catch(err => {
-      console.log("失败了", err);
+      console.log(logSymbols.error, chalk.green("创建失败:)"));
     });
 }
 
