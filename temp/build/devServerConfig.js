@@ -16,14 +16,14 @@ module.exports = {
   overlay: {
     // 错误信息 直接显示在页面上
     warnings: true,
-    errors: true
-  }
+    errors: true,
+  },
   // proxy: [
   //   {
   //     //要代理的地址 此规则用！取反
   //     context: [`!${publicPath}**`],
   //     //要代理的目标
-  //     target: "https://platform-dev.mobilemd.cn",
+  //     target: ",
   //     //是否更改源
   //     changeOrigin: true,
   //     //路径重写
